@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Model - Employee Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg mb-6">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex items-center py-4">
+                    <span class="font-semibold text-gray-700 text-lg">Employee Monitoring System</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="/train-page" class="py-2 px-3 text-blue-600 font-medium">Train</a>
+                    <a href="/image-predict" class="py-2 px-3 text-gray-500 hover:text-gray-700">Image Prediction</a>
+                    <a href="/video-predict" class="py-2 px-3 text-gray-500 hover:text-gray-700">Video Prediction</a>
+                    <a href="/webcam-detect" class="py-2 px-3 text-gray-500 hover:text-gray-700">Webcam Detection</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4">
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-6 text-center">Train YOLOv8 Model</h2>
+            
+            <form id="training-form" class="space-y-4">
+                <!-- YAML Configuration File Upload -->
+                <div>
+                    <label class="block text-gray-700">Upload YAML Configuration:</label>
+                    <input type="file" name="yaml_file" accept=".yaml,.yml" required
+                           class="mt-1 block w-full">
+                    <p class="mt-1 text-sm text-gray-500">Upload your YAML file containing dataset configuration</p>
+                </div>
+
+                <!-- Training Parameters -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700">Number of Epochs:</label>
+                        <input type="number" name="epochs" value="10" min="1" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700">Batch Size:</label>
+                        <input type="number" name="batch_size" value="16" min="1" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700">Image Size:</label>
+                        <input type="number" name="imgsz" value="640" min="32" step="32" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                    Start Training
+                </button>
+            </form>
+
+            <!-- Training Status -->
+            <div id="training-status" class="mt-6 hidden">
+                <h3 class="font-bold text-lg mb-2">Training Status:</h3>
+                <div id="status-content" class="p-4 bg-gray-50 rounded-lg">
+                    <div class="animate-pulse">
+                        <p class="text-gray-600">Training in progress...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const trainingForm = document.getElementById('training-form');
+        const trainingStatus = document.getElementById('training-status');
+        const statusContent = document.getElementById('status-content');
+
+        trainingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                trainingStatus.classList.remove('hidden');
+                statusContent.innerHTML = `
+                    <div class="animate-pulse">
+                        <p class="text-gray-600">Training in progress...</p>
+                    </div>
+                `;
+
+                const submitButton = trainingForm.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+                const response = await fetch('/train', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    statusContent.innerHTML = `
+                        <div class="text-green-600">
+                            <p class="font-medium">Training completed successfully!</p>
+                            <p class="mt-2">Model saved as: ${result.model_name}</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.error || 'Training failed');
+                }
+            } catch (error) {
+                statusContent.innerHTML = `
+                    <div class="text-red-600">
+                        <p class="font-medium">Training failed:</p>
+                        <p class="mt-2">${error.message}</p>
+                    </div>
+                `;
+            } finally {
+                const submitButton = trainingForm.querySelector('button[type="submit"]');
+                submitButton.disabled = false;
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+    </script>
+</body>
+</html>

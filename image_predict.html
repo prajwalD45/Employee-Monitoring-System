@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Prediction - Employee Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg mb-6">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div class="flex items-center py-4">
+                        <span class="font-semibold text-gray-700 text-lg">Employee Monitoring System</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="/train-page" class="py-2 px-3 text-gray-500 hover:text-gray-700">Train</a>
+                    <a href="/image-predict" class="py-2 px-3 text-blue-600 font-medium">Image Prediction</a>
+                    <a href="/video-predict" class="py-2 px-3 text-gray-500 hover:text-gray-700">Video Prediction</a>
+                    <a href="/webcam-detect" class="py-2 px-3 text-gray-500 hover:text-gray-700">Webcam Detection</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4">
+        <div class="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-6 text-center">Image Prediction</h2>
+            
+            <form id="prediction-form" class="space-y-4">
+                <!-- Model Selection -->
+                <div>
+                    <label class="block text-gray-700">Select Model:</label>
+                    <select id="model-select" name="model" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="">-- Select Pre-trained Model --</option>
+                        {% for model in models %}
+                        <option value="{{ model }}">{{ model }}</option>
+                        {% endfor %}
+                        <option value="custom">Upload Custom Model</option>
+                    </select>
+                </div>
+
+                <!-- Custom Model Upload -->
+                <div id="custom-model-upload" class="hidden">
+                    <label class="block text-gray-700">Upload Custom Model (.pt):</label>
+                    <input type="file" name="custom_model" accept=".pt"
+                           class="mt-1 block w-full">
+                </div>
+
+                <!-- Image Upload -->
+                <div>
+                    <label class="block text-gray-700">Upload Image:</label>
+                    <input type="file" name="file" accept="image/*" required
+                           class="mt-1 block w-full">
+                </div>
+
+                <button type="submit"
+                        class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                    Predict
+                </button>
+            </form>
+
+            <!-- Result Display -->
+            <div id="prediction-result" class="mt-4 hidden">
+                <h3 class="font-bold text-lg mb-2">Detection Result:</h3>
+                <img id="output-image" class="w-full rounded-lg shadow-lg" alt="Detection Result">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle custom model upload visibility
+        document.getElementById('model-select').addEventListener('change', function() {
+            const customModelUpload = document.getElementById('custom-model-upload');
+            customModelUpload.classList.toggle('hidden', this.value !== 'custom');
+        });
+
+        // Handle form submission
+        document.getElementById('prediction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/predict-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                const resultDiv = document.getElementById('prediction-result');
+                const outputImage = document.getElementById('output-image');
+
+                if (result.success && result.image_url) {
+                    outputImage.src = result.image_url + '?t=' + new Date().getTime(); // Prevent caching
+                    resultDiv.classList.remove('hidden');
+                } else {
+                    alert('Error: ' + (result.error || 'No output returned from server.'));
+                }
+            } catch (error) {
+                alert('Error during prediction: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
